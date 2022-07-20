@@ -1,4 +1,4 @@
-module github.com/sigmacomputing/databricks-sql-go
+module github.com/databricks/databricks-sql-go
 
 go 1.18
 
