@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	_ "github.com/databricks/databricks-sql-go"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	_ "github.com/sigmacomputing/databricks-sql-go"
 )
 
 const (
