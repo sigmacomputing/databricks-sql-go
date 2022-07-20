@@ -1,4 +1,4 @@
-module github.com/databricks/databricks-sql-go/examples
+module github.com/sigmacomputing/databricks-sql-go/examples
 
 go 1.18
 
