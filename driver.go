@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/sigmacomputing/databricks-sql-go/hive"
+	"github.com/databricks/databricks-sql-go/hive"
 )
 
 var (
