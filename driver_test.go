@@ -3,24 +3,30 @@ package dbsql
 import (
 	"io/ioutil"
 	"testing"
+	"time"
 )
 
 func TestParseURI(t *testing.T) {
+	americaLosAngelesTz, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
 		in  string
 		out Options
 	}{
 		{
 			"databricks://token:supersecret@example.cloud.databricks.com/sql/1.0/endpoints/12346a5b5b0e123a",
-			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", MaxRows: 10000, Timeout: 0, LogOut: ioutil.Discard},
+			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", MaxRows: 10000, Timeout: 0, LogOut: ioutil.Discard, Loc: time.UTC},
 		},
 		{
 			"databricks://token:supersecret@example.cloud.databricks.com/sql/1.0/endpoints/12346a5b5b0e123a?timeout=123",
-			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", Timeout: 123, MaxRows: 10000, LogOut: ioutil.Discard},
+			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", Timeout: 123, MaxRows: 10000, LogOut: ioutil.Discard, Loc: time.UTC},
 		},
 		{
 			"databricks://token:supersecret@example.cloud.databricks.com/sql/1.0/endpoints/12346a5b5b0e123a?timeout=123&maxRows=1000",
-			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", Timeout: 123, MaxRows: 1000, LogOut: ioutil.Discard},
+			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", Timeout: 123, MaxRows: 1000, LogOut: ioutil.Discard, Loc: time.UTC},
 		},
 		{
 			"databricks://token:supersecret@example.cloud.databricks.com/sql/1.0/endpoints/12346a5b5b0e123a?timeout=123&maxRows=1000&userAgentEntry=client-provided-info",
@@ -28,11 +34,15 @@ func TestParseURI(t *testing.T) {
 		},
 		{
 			"databricks://token:supersecret@example.cloud.databricks.com/sql/1.0/endpoints/12346a5b5b0e123a?maxRows=1000",
-			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", MaxRows: 1000, Timeout: 0, LogOut: ioutil.Discard},
+			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", MaxRows: 1000, Timeout: 0, LogOut: ioutil.Discard, Loc: time.UTC},
 		},
 		{
 			"databricks://:supersecret@example.cloud.databricks.com/sql/1.0/endpoints/12346a5b5b0e123a?maxRows=1000",
-			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", MaxRows: 1000, Timeout: 0, LogOut: ioutil.Discard},
+			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", MaxRows: 1000, Timeout: 0, LogOut: ioutil.Discard, Loc: time.UTC},
+		},
+		{
+			"databricks://:supersecret@example.cloud.databricks.com/sql/1.0/endpoints/12346a5b5b0e123a?maxRows=1000&tz=America%2FLos_Angeles",
+			Options{Host: "example.cloud.databricks.com", Port: "443", Token: "supersecret", HTTPPath: "/sql/1.0/endpoints/12346a5b5b0e123a", MaxRows: 1000, Timeout: 0, LogOut: ioutil.Discard, Loc: americaLosAngelesTz},
 		},
 	}
 
@@ -43,7 +53,7 @@ func TestParseURI(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			if *opts != tt.out {
+			if !opts.Equal(&tt.out) {
 				t.Errorf("got: %v, want: %v", opts, tt.out)
 			}
 		})

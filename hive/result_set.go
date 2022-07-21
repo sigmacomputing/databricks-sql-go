@@ -14,6 +14,7 @@ type ResultSet struct {
 	length  int
 	fetchfn func() (*cli_service.TFetchResultsResp, error)
 	schema  *TableSchema
+	loc     *time.Location
 
 	operation *Operation
 	result    *cli_service.TRowSet
@@ -49,8 +50,7 @@ func (rs *ResultSet) Next(dest []driver.Value) error {
 	}
 
 	for i := range dest {
-		val, err := value(rs.result.Columns[i], rs.schema.Columns[i], rs.idx)
-
+		val, err := value(rs.result.Columns[i], rs.schema.Columns[i], rs.idx, rs.loc)
 		if err != nil {
 			return err
 		}
@@ -71,7 +71,11 @@ func isNull(nulls []byte, position int) bool {
 	return false
 }
 
-func value(col *cli_service.TColumn, cd *ColDesc, i int) (interface{}, error) {
+func value(col *cli_service.TColumn, cd *ColDesc, i int, loc *time.Location) (interface{}, error) {
+	if loc == nil {
+		loc = time.UTC
+	}
+
 	switch cd.DatabaseTypeName {
 	case "STRING", "CHAR", "VARCHAR":
 		if isNull(col.StringVal.Nulls, i) {
@@ -112,7 +116,7 @@ func value(col *cli_service.TColumn, cd *ColDesc, i int) (interface{}, error) {
 		if isNull(col.StringVal.Nulls, i) {
 			return nil, nil
 		}
-		t, err := time.Parse(TimestampFormat, col.StringVal.Values[i])
+		t, err := time.ParseInLocation(TimestampFormat, col.StringVal.Values[i], loc)
 		if err != nil {
 			return nil, err
 		}
