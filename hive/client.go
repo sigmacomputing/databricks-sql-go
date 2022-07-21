@@ -3,6 +3,7 @@ package hive
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/databricks/databricks-sql-go/cli_service"
@@ -18,6 +19,7 @@ type Client struct {
 // Options for Hive Client
 type Options struct {
 	MaxRows int64
+	Loc     *time.Location
 }
 
 // NewClient creates Hive Client

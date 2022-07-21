@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"io"
 	"io/ioutil"
+	"time"
 )
 
 func init() {
@@ -19,6 +20,7 @@ type Options struct {
 	MaxRows        int64
 	Timeout        int
 	UserAgentEntry string
+	Loc            *time.Location
 
 	LogOut io.Writer
 }
@@ -28,6 +30,16 @@ const (
 	DriverName    = "godatabrickssqlconnector"
 	DriverVersion = "0.9.0"
 )
+
+func (o *Options) Equal(o2 *Options) bool {
+	return o.Host == o2.Host &&
+		o.Port == o2.Port &&
+		o.Token == o2.Token &&
+		o.HTTPPath == o2.HTTPPath &&
+		o.MaxRows == o2.MaxRows &&
+		o.Timeout == o2.Timeout &&
+		o.Loc.String() == o2.Loc.String()
+}
 
 var (
 	// DefaultOptions for the driver

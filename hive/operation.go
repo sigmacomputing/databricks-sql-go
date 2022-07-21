@@ -74,6 +74,7 @@ func (op *Operation) FetchResults(ctx context.Context, schema *TableSchema) (*Re
 		result:  resp.Results,
 		more:    resp.GetHasMoreRows(),
 		schema:  schema,
+		loc:     op.hive.opts.Loc,
 		fetchfn: func() (*cli_service.TFetchResultsResp, error) { return fetch(ctx, op, schema) },
 	}
 

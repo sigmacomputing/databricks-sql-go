@@ -32,7 +32,8 @@ func (d *Driver) Open(uri string) (driver.Conn, error) {
 		return nil, err
 	}
 
-	log.Printf("opts: %v", opts)
+	// (eric) Don't log opts because it contains sensitive information.
+	// log.Printf("opts: %v", opts)
 
 	conn, err := connect(opts)
 	if err != nil {
@@ -107,6 +108,13 @@ func parseURI(uri string) (*Options, error) {
 		opts.UserAgentEntry = userAgentEntry[0]
 	}
 
+	opts.Loc = time.UTC
+	if tz, ok := query["tz"]; ok {
+		if loc, err := time.LoadLocation(tz[0]); err == nil {
+			opts.Loc = loc
+		}
+	}
+
 	return &opts, nil
 }
 
@@ -177,7 +185,7 @@ func connect(opts *Options) (*Conn, error) {
 	protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
 	tclient := thrift.NewTStandardClient(protocolFactory.GetProtocol(transport), protocolFactory.GetProtocol(transport))
 
-	client := hive.NewClient(tclient, logger, &hive.Options{MaxRows: opts.MaxRows})
+	client := hive.NewClient(tclient, logger, &hive.Options{MaxRows: opts.MaxRows, Loc: opts.Loc})
 
 	return &Conn{client: client, t: transport, log: logger}, nil
 }
