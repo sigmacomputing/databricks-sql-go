@@ -77,11 +77,16 @@ func value(col *cli_service.TColumn, cd *ColDesc, i int, loc *time.Location) (in
 	}
 
 	switch cd.DatabaseTypeName {
-	case "STRING", "CHAR", "VARCHAR":
+	case "STRING", "CHAR", "VARCHAR", "MAP":
 		if isNull(col.StringVal.Nulls, i) {
 			return nil, nil
 		}
 		return col.StringVal.Values[i], nil
+	case "BINARY":
+		if isNull(col.BinaryVal.Nulls, i) {
+			return nil, nil
+		}
+		return col.BinaryVal.Values[i], nil
 	case "TINYINT":
 		if isNull(col.ByteVal.Nulls, i) {
 			return nil, nil
@@ -121,6 +126,16 @@ func value(col *cli_service.TColumn, cd *ColDesc, i int, loc *time.Location) (in
 			return nil, err
 		}
 		return t, nil
+	case "DATE":
+		if isNull(col.StringVal.Nulls, i) {
+			return nil, nil
+		}
+		t, err := time.ParseInLocation(DateFormat, col.StringVal.Values[i], loc)
+		if err != nil {
+			return nil, err
+		}
+		return t, nil
+
 	default:
 		if isNull(col.StringVal.Nulls, i) {
 			return nil, nil
