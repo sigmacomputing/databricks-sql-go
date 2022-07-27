@@ -32,7 +32,7 @@ func (rs *ResultSet) Next(dest []driver.Value) error {
 		resp, err := rs.fetchfn()
 
 		if err != nil {
-			return err
+			return WithStack(err)
 		}
 
 		// Replace previous page of results with new page of results
@@ -52,7 +52,7 @@ func (rs *ResultSet) Next(dest []driver.Value) error {
 	for i := range dest {
 		val, err := value(rs.result.Columns[i], rs.schema.Columns[i], rs.idx, rs.loc)
 		if err != nil {
-			return err
+			return WithStack(err)
 		}
 
 		dest[i] = val
@@ -123,7 +123,7 @@ func value(col *cli_service.TColumn, cd *ColDesc, i int, loc *time.Location) (in
 		}
 		t, err := time.ParseInLocation(TimestampFormat, col.StringVal.Values[i], loc)
 		if err != nil {
-			return nil, err
+			return nil, WithStack(err)
 		}
 		return t, nil
 	case "DATE":

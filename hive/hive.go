@@ -24,10 +24,10 @@ func checkStatus(resp interface{}) error {
 	if ok {
 		status := rpcresp.GetStatus()
 		if status.StatusCode == cli_service.TStatusCode_ERROR_STATUS {
-			return errors.New(status.GetErrorMessage())
+			return WithStack(errors.New(status.GetErrorMessage()))
 		}
 		if status.StatusCode == cli_service.TStatusCode_INVALID_HANDLE_STATUS {
-			return errors.New("thrift: invalid handle")
+			return WithStack(errors.New("thrift: invalid handle"))
 		}
 
 		// SUCCESS, SUCCESS_WITH_INFO, STILL_EXECUTING are ok
@@ -35,7 +35,7 @@ func checkStatus(resp interface{}) error {
 	}
 
 	log.Printf("response: %v", resp)
-	return errors.New("thrift: invalid response")
+	return WithStack(errors.New("thrift: invalid response"))
 }
 
 func guid(b []byte) string {
