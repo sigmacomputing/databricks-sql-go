@@ -42,10 +42,10 @@ func (c *Client) OpenSession(ctx context.Context) (*Session, error) {
 
 	resp, err := c.client.OpenSession(ctx, &req)
 	if err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 	if err := checkStatus(resp); err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 
 	c.log.Printf("open session: %s", guid(resp.SessionHandle.GetSessionId().GUID))

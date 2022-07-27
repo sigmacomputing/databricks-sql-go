@@ -32,10 +32,10 @@ func (op *Operation) GetResultSetMetadata(ctx context.Context) (*TableSchema, er
 
 	resp, err := op.hive.client.GetResultSetMetadata(ctx, &req)
 	if err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 	if err := checkStatus(resp); err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 
 	schema := new(TableSchema)
@@ -65,7 +65,7 @@ func (op *Operation) FetchResults(ctx context.Context, schema *TableSchema) (*Re
 
 	resp, err := fetch(ctx, op, schema)
 	if err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 
 	rs := ResultSet{
@@ -93,10 +93,10 @@ func fetch(ctx context.Context, op *Operation, schema *TableSchema) (*cli_servic
 
 	resp, err := op.hive.client.FetchResults(ctx, &req)
 	if err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 	if err := checkStatus(resp); err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 
 	op.hive.log.Printf("results: %v", resp.Results)
@@ -110,10 +110,10 @@ func (op *Operation) Close(ctx context.Context) error {
 	}
 	resp, err := op.hive.client.CloseOperation(ctx, &req)
 	if err != nil {
-		return err
+		return WithStack(err)
 	}
 	if err := checkStatus(resp); err != nil {
-		return err
+		return WithStack(err)
 	}
 
 	op.hive.log.Printf("close operation: %v", guid(op.h.OperationId.GUID))

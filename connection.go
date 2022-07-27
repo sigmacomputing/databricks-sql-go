@@ -22,11 +22,11 @@ type Conn struct {
 func (c *Conn) Ping(ctx context.Context) error {
 	session, err := c.OpenSession(ctx)
 	if err != nil {
-		return err
+		return hive.WithStack(err)
 	}
 
 	if err := session.Ping(ctx); err != nil {
-		return err
+		return hive.WithStack(err)
 	}
 
 	return nil
@@ -61,13 +61,13 @@ func (c *Conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, e
 func (c *Conn) QueryContext(ctx context.Context, q string, args []driver.NamedValue) (driver.Rows, error) {
 	session, err := c.OpenSession(ctx)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	tmpl := template(q)
 	stmt, err := statement(tmpl, args)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 	return query(ctx, session, stmt)
 }
@@ -76,13 +76,13 @@ func (c *Conn) QueryContext(ctx context.Context, q string, args []driver.NamedVa
 func (c *Conn) ExecContext(ctx context.Context, q string, args []driver.NamedValue) (driver.Result, error) {
 	session, err := c.OpenSession(ctx)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	tmpl := template(q)
 	stmt, err := statement(tmpl, args)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 	return exec(ctx, session, stmt)
 }
@@ -109,7 +109,7 @@ func (c *Conn) OpenSession(ctx context.Context) (*hive.Session, error) {
 func (c *Conn) ResetSession(ctx context.Context) error {
 	if c.session != nil {
 		if err := c.session.Close(ctx); err != nil {
-			return err
+			return hive.WithStack(err)
 		}
 		c.session = nil
 	}
