@@ -21,10 +21,10 @@ func (s *Session) Ping(ctx context.Context) error {
 
 	resp, err := s.hive.client.GetInfo(ctx, &req)
 	if err != nil {
-		return err
+		return WithStack(err)
 	}
 	if err := checkStatus(resp); err != nil {
-		return err
+		return WithStack(err)
 	}
 
 	s.hive.log.Printf("ping. server name: %s", resp.InfoValue.GetStringValue())
@@ -40,10 +40,10 @@ func (s *Session) ExecuteStatement(ctx context.Context, stmt string) (*Operation
 	resp, err := s.hive.client.ExecuteStatement(ctx, &req)
 
 	if err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 	if err := checkStatus(resp); err != nil {
-		return nil, err
+		return nil, WithStack(err)
 	}
 	s.hive.log.Printf("execute operation: %s", guid(resp.OperationHandle.OperationId.GUID))
 	s.hive.log.Printf("operation. has resultset: %v", resp.OperationHandle.GetHasResultSet())
@@ -59,10 +59,10 @@ func (s *Session) Close(ctx context.Context) error {
 	}
 	resp, err := s.hive.client.CloseSession(ctx, &req)
 	if err != nil {
-		return err
+		return WithStack(err)
 	}
 	if err := checkStatus(resp); err != nil {
-		return err
+		return WithStack(err)
 	}
 	return nil
 }

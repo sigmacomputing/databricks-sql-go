@@ -62,11 +62,11 @@ func (s *Stmt) Query(args []driver.Value) (driver.Rows, error) {
 func (s *Stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
 	session, err := s.conn.OpenSession(ctx)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 	stmt, err := statement(s.stmt, args)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 	return query(ctx, session, stmt)
 }
@@ -75,11 +75,11 @@ func (s *Stmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driv
 func (s *Stmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
 	session, err := s.conn.OpenSession(ctx)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 	stmt, err := statement(s.stmt, args)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 	return exec(ctx, session, stmt)
 }
@@ -119,17 +119,17 @@ func statement(tmpl string, args []driver.NamedValue) (string, error) {
 func query(ctx context.Context, session *hive.Session, stmt string) (driver.Rows, error) {
 	operation, err := session.ExecuteStatement(ctx, stmt)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	schema, err := operation.GetResultSetMetadata(ctx)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	rs, err := operation.FetchResults(ctx, schema)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	return &Rows{
@@ -142,11 +142,11 @@ func query(ctx context.Context, session *hive.Session, stmt string) (driver.Rows
 func exec(ctx context.Context, session *hive.Session, stmt string) (driver.Result, error) {
 	operation, err := session.ExecuteStatement(ctx, stmt)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	if err := operation.Close(ctx); err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	return driver.ResultNoRows, nil

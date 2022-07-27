@@ -29,7 +29,7 @@ type Driver struct{}
 func (d *Driver) Open(uri string) (driver.Conn, error) {
 	opts, err := parseURI(uri)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	// (eric) Don't log opts because it contains sensitive information.
@@ -37,7 +37,7 @@ func (d *Driver) Open(uri string) (driver.Conn, error) {
 
 	conn, err := connect(opts)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 	return conn, nil
 }
@@ -45,7 +45,7 @@ func (d *Driver) Open(uri string) (driver.Conn, error) {
 func parseURI(uri string) (*Options, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	if u.Scheme != "databricks" {
@@ -69,7 +69,7 @@ func parseURI(uri string) (*Options, error) {
 
 	host, port, err := net.SplitHostPort(u.Host)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	opts.Host = host
@@ -123,7 +123,7 @@ func (d *Driver) OpenConnector(name string) (driver.Connector, error) {
 
 	opts, err := parseURI(name)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	return &connector{opts: opts}, nil
@@ -161,14 +161,14 @@ func connect(opts *Options) (*Conn, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	httpOptions := thrift.THttpClientOptions{Client: httpClient}
 	endpointUrl := fmt.Sprintf("https://%s:%s@%s:%s"+opts.HTTPPath, "token", url.QueryEscape(opts.Token), opts.Host, opts.Port)
 	transport, err = thrift.NewTHttpClientTransportFactoryWithOptions(endpointUrl, httpOptions).GetTransport(socket)
 	if err != nil {
-		return nil, err
+		return nil, hive.WithStack(err)
 	}
 
 	httpTransport, ok := transport.(*thrift.THttpClient)
