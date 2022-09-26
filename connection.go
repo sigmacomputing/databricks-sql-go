@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"log"
+	"runtime/debug"
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -17,9 +18,18 @@ type Conn struct {
 	session *hive.Session
 	client  *hive.Client
 	log     *log.Logger
+
+	// Randomly-generated unique ID used to refer to this Conn.
+	id uint64
+}
+
+func (c *Conn) logOp(op string) {
+	c.log.Printf("%s: connId=%d\n%s", op, c.id, debug.Stack())
 }
 
 func (c *Conn) Ping(ctx context.Context) error {
+	c.logOp("Ping")
+
 	session, err := c.OpenSession(ctx)
 	if err != nil {
 		return hive.WithStack(err)
@@ -36,6 +46,8 @@ func (c *Conn) Ping(ctx context.Context) error {
 // and is called in place of any ColumnConverter. CheckNamedValue must do type
 // validation and conversion as appropriate for the driver.
 func (c *Conn) CheckNamedValue(val *driver.NamedValue) error {
+	c.logOp("CheckNamedValue")
+
 	t, ok := val.Value.(time.Time)
 	if ok {
 		val.Value = t.Format(hive.TimestampFormat)
@@ -51,6 +63,8 @@ func (c *Conn) Prepare(query string) (driver.Stmt, error) {
 
 // PrepareContext returns prepared statement
 func (c *Conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
+	c.logOp("PrepareContext")
+
 	return &Stmt{
 		conn: c,
 		stmt: template(query),
@@ -59,6 +73,8 @@ func (c *Conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, e
 
 // QueryContext executes a query that may return rows
 func (c *Conn) QueryContext(ctx context.Context, q string, args []driver.NamedValue) (driver.Rows, error) {
+	c.logOp("QueryContext")
+
 	session, err := c.OpenSession(ctx)
 	if err != nil {
 		return nil, hive.WithStack(err)
@@ -74,6 +90,8 @@ func (c *Conn) QueryContext(ctx context.Context, q string, args []driver.NamedVa
 
 // ExecContext executes a query that doesn't return rows
 func (c *Conn) ExecContext(ctx context.Context, q string, args []driver.NamedValue) (driver.Result, error) {
+	c.logOp("ExecContext")
+
 	session, err := c.OpenSession(ctx)
 	if err != nil {
 		return nil, hive.WithStack(err)
@@ -94,6 +112,8 @@ func (c *Conn) Begin() (driver.Tx, error) {
 
 // OpenSession ensure opened session
 func (c *Conn) OpenSession(ctx context.Context) (*hive.Session, error) {
+	c.logOp("OpenSession")
+
 	if c.session == nil {
 		session, err := c.client.OpenSession(ctx)
 		if err != nil {
@@ -107,6 +127,8 @@ func (c *Conn) OpenSession(ctx context.Context) (*hive.Session, error) {
 
 // ResetSession closes hive session
 func (c *Conn) ResetSession(ctx context.Context) error {
+	c.logOp("ResetSession")
+
 	if c.session != nil {
 		if err := c.session.Close(ctx); err != nil {
 			return hive.WithStack(err)
@@ -118,6 +140,7 @@ func (c *Conn) ResetSession(ctx context.Context) error {
 
 // Close connection
 func (c *Conn) Close() error {
+	c.logOp("Close")
 	c.log.Printf("close connection")
 	return c.t.Close()
 }
