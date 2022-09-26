@@ -52,9 +52,9 @@ func (op *Operation) GetResultSetMetadata(ctx context.Context) (*TableSchema, er
 			})
 		}
 
-		for _, col := range schema.Columns {
-			op.hive.log.Printf("fetch schema: %v", col)
-		}
+		//for _, col := range schema.Columns {
+		//	op.hive.log.Printf("fetch schema: %v", col)
+		//}
 	}
 
 	return schema, nil
@@ -99,7 +99,7 @@ func fetch(ctx context.Context, op *Operation, schema *TableSchema) (*cli_servic
 		return nil, WithStack(err)
 	}
 
-	op.hive.log.Printf("results: %v", resp.Results)
+	//op.hive.log.Printf("results: %v", resp.Results)
 	return resp, nil
 }
 
