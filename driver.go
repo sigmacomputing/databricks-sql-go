@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -115,6 +117,16 @@ func parseURI(uri string) (*Options, error) {
 		}
 	}
 
+	if logOut, ok := query["logOut"]; ok {
+		if logOut[0] == "stdout" {
+			opts.LogOut = os.Stdout
+		} else if logOut[0] == "stderr" {
+			opts.LogOut = os.Stderr
+		} else {
+			return nil, fmt.Errorf("invalid logOut %s", logOut[0])
+		}
+	}
+
 	return &opts, nil
 }
 
@@ -187,5 +199,8 @@ func connect(opts *Options) (*Conn, error) {
 
 	client := hive.NewClient(tclient, logger, &hive.Options{MaxRows: opts.MaxRows, Loc: opts.Loc})
 
-	return &Conn{client: client, t: transport, log: logger}, nil
+	connId := rand.Uint64()
+
+	logger.Printf("connect: connId=%d host=%s port=%s httpPath=%s", connId, opts.Host, opts.Port, opts.HTTPPath)
+	return &Conn{client: client, t: transport, log: logger, id: connId}, nil
 }
