@@ -24,7 +24,7 @@ type Conn struct {
 }
 
 func (c *Conn) logOp(op string) {
-	c.log.Printf("%s: connId=%d\n%s", op, c.id, debug.Stack())
+	c.log.Printf("%s: connId=%d %s", op, c.id, debug.Stack())
 }
 
 func (c *Conn) Ping(ctx context.Context) error {
