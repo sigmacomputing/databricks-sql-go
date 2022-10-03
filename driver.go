@@ -186,7 +186,7 @@ func connect(opts *Options) (*Conn, error) {
 	httpTransport, ok := transport.(*thrift.THttpClient)
 	if ok {
 		var userAgent string
-		if opts.UserAgentEntry != "" {
+		if opts.UserAgentEntry == "" {
 			userAgent = fmt.Sprintf("%s/%s", DriverName, DriverVersion)
 		} else {
 			userAgent = fmt.Sprintf("%s/%s (%s)", DriverName, DriverVersion, opts.UserAgentEntry)
