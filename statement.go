@@ -121,6 +121,7 @@ func query(ctx context.Context, session *hive.Session, stmt string) (driver.Rows
 	if err != nil {
 		return nil, hive.WithStack(err)
 	}
+	callOperationMetadataHook(ctx, operation)
 
 	schema, err := operation.GetResultSetMetadata(ctx)
 	if err != nil {
@@ -144,6 +145,7 @@ func exec(ctx context.Context, session *hive.Session, stmt string) (driver.Resul
 	if err != nil {
 		return nil, hive.WithStack(err)
 	}
+	callOperationMetadataHook(ctx, operation)
 
 	if err := operation.Close(ctx); err != nil {
 		return nil, hive.WithStack(err)

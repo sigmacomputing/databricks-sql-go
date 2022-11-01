@@ -12,6 +12,10 @@ type Session struct {
 	h    *cli_service.TSessionHandle
 }
 
+func (s *Session) GetSessionId() string {
+	return guid(s.h.GetSessionId().GUID)
+}
+
 // Ping checks the connection
 func (s *Session) Ping(ctx context.Context) error {
 	req := cli_service.TGetInfoReq{

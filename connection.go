@@ -79,6 +79,7 @@ func (c *Conn) QueryContext(ctx context.Context, q string, args []driver.NamedVa
 	if err != nil {
 		return nil, hive.WithStack(err)
 	}
+	callOpenSessionHook(ctx, session.GetSessionId())
 
 	tmpl := template(q)
 	stmt, err := statement(tmpl, args)
@@ -96,6 +97,7 @@ func (c *Conn) ExecContext(ctx context.Context, q string, args []driver.NamedVal
 	if err != nil {
 		return nil, hive.WithStack(err)
 	}
+	callOpenSessionHook(ctx, session.GetSessionId())
 
 	tmpl := template(q)
 	stmt, err := statement(tmpl, args)

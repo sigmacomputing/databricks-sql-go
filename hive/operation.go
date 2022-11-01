@@ -13,6 +13,10 @@ type Operation struct {
 	h    *cli_service.TOperationHandle
 }
 
+func (op *Operation) GetOperationId() string {
+	return guid(op.h.GetOperationId().GUID)
+}
+
 // HasResultSet return if operation has result set
 func (op *Operation) HasResultSet() bool {
 	return op.h.GetHasResultSet()
