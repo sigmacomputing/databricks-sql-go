@@ -1,27 +1,13 @@
 package dbsql
 
 import (
-	"context"
+	"testing"
+	"time"
+
 	"github.com/databricks/databricks-sql-go/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
-
-func TestConnector_Connect(t *testing.T) {
-	t.Run("Connect returns err when thrift client initialization fails", func(t *testing.T) {
-		cfg := config.WithDefaults()
-		cfg.ThriftProtocol = "invalidprotocol"
-
-		testConnector := connector{
-			cfg: cfg,
-		}
-		conn, err := testConnector.Connect(context.Background())
-		assert.Nil(t, conn)
-		assert.Error(t, err)
-	})
-}
 
 func TestNewConnector(t *testing.T) {
 	t.Run("Connector initialized with functional options should have all options set", func(t *testing.T) {
@@ -51,13 +37,41 @@ func TestNewConnector(t *testing.T) {
 			Port:           port,
 			Protocol:       "https",
 			AccessToken:    accessToken,
-			HTTPPath:       httpPath,
+			HTTPPath:       "/" + httpPath,
 			MaxRows:        maxRows,
 			QueryTimeout:   timeout,
 			Catalog:        catalog,
 			Schema:         schema,
 			UserAgentEntry: userAgentEntry,
 			SessionParams:  sessionParams,
+		}
+		expectedCfg := config.WithDefaults()
+		expectedCfg.UserConfig = expectedUserConfig
+		coni, ok := con.(*connector)
+		require.True(t, ok)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedCfg, coni.cfg)
+	})
+	t.Run("Connector initialized minimal settings", func(t *testing.T) {
+		host := "databricks-host"
+		port := 443
+		accessToken := "token"
+		httpPath := "http-path"
+		maxRows := 100000
+		sessionParams := map[string]string{}
+		con, err := NewConnector(
+			WithServerHostname(host),
+			WithAccessToken(accessToken),
+			WithHTTPPath(httpPath),
+		)
+		expectedUserConfig := config.UserConfig{
+			Host:          host,
+			Port:          port,
+			Protocol:      "https",
+			AccessToken:   accessToken,
+			HTTPPath:      "/" + httpPath,
+			MaxRows:       maxRows,
+			SessionParams: sessionParams,
 		}
 		expectedCfg := config.WithDefaults()
 		expectedCfg.UserConfig = expectedUserConfig

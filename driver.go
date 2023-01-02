@@ -15,6 +15,8 @@ func init() {
 
 type databricksDriver struct{}
 
+// Open returns a new connection to Databricks database with a DSN string.
+// Use sql.Open("databricks", <dsn string>) after importing this driver package.
 func (d *databricksDriver) Open(dsn string) (driver.Conn, error) {
 	cfg := config.WithDefaults()
 	userCfg, err := config.ParseDSN(dsn)
@@ -28,6 +30,8 @@ func (d *databricksDriver) Open(dsn string) (driver.Conn, error) {
 	return c.Connect(context.Background())
 }
 
+// OpenConnector returns a new Connector.
+// Used by sql.DB to obtain a Connector and invoke its Connect method to obtain each needed connection.
 func (d *databricksDriver) OpenConnector(dsn string) (driver.Connector, error) {
 	cfg := config.WithDefaults()
 	ucfg, err := config.ParseDSN(dsn)
@@ -35,46 +39,9 @@ func (d *databricksDriver) OpenConnector(dsn string) (driver.Connector, error) {
 		return nil, err
 	}
 	cfg.UserConfig = ucfg
-	return &connector{cfg}, nil
+
+	return &connector{cfg: cfg}, nil
 }
 
 var _ driver.Driver = (*databricksDriver)(nil)
 var _ driver.DriverContext = (*databricksDriver)(nil)
-
-// type databricksDB struct {
-// 	*sql.DB
-// }
-
-// func OpenDB(c driver.Connector) *databricksDB {
-// 	db := sql.OpenDB(c)
-// 	return &databricksDB{db}
-// }
-
-// func (db *databricksDB) QueryContextAsync(ctx context.Context, query string, args ...any) (rows *sql.Rows, queryId string, err error) {
-// 	return nil, "", nil
-// }
-
-// func (db *databricksDB) ExecContextAsync(ctx context.Context, query string, args ...any) (result sql.Result, queryId string) {
-// 	//go do something
-// 	return nil, ""
-// }
-
-// func (db *databricksDB) CancelQuery(ctx context.Context, queryId string) error {
-// 	//go do something
-// 	return nil
-// }
-
-// func (db *databricksDB) GetQueryStatus(ctx context.Context, queryId string) error {
-// 	//go do something
-// 	return nil
-// }
-
-// func (db *databricksDB) FetchRows(ctx context.Context, queryId string) (rows *sql.Rows, err error) {
-// 	//go do something
-// 	return nil, nil
-// }
-
-// func (db *databricksDB) FetchResult(ctx context.Context, queryId string) (rows sql.Result, err error) {
-// 	//go do something
-// 	return nil, nil
-// }

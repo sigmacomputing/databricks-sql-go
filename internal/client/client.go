@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -13,18 +12,20 @@ import (
 	"github.com/databricks/databricks-sql-go/internal/cli_service"
 	"github.com/databricks/databricks-sql-go/internal/config"
 	"github.com/databricks/databricks-sql-go/logger"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 )
 
-// this is used to generate test data. Developer should change this manually
+// RecordResults is used to generate test data. Developer should change this manually
 var RecordResults bool
 var resultIndex int
 
 type ThriftServiceClient struct {
 	*cli_service.TCLIServiceClient
-	transport *Transport
 }
 
+// OpenSession is a wrapper around the thrift operation OpenSession
+// If RecordResults is true, the results will be marshalled to JSON format and written to OpenSession<index>.json
 func (tsc *ThriftServiceClient) OpenSession(ctx context.Context, req *cli_service.TOpenSessionReq) (*cli_service.TOpenSessionResp, error) {
 	msg, start := logger.Track("OpenSession")
 	resp, err := tsc.TCLIServiceClient.OpenSession(ctx, req)
@@ -41,6 +42,8 @@ func (tsc *ThriftServiceClient) OpenSession(ctx context.Context, req *cli_servic
 	return resp, CheckStatus(resp)
 }
 
+// CloseSession is a wrapper around the thrift operation CloseSession
+// If RecordResults is true, the results will be marshalled to JSON format and written to CloseSession<index>.json
 func (tsc *ThriftServiceClient) CloseSession(ctx context.Context, req *cli_service.TCloseSessionReq) (*cli_service.TCloseSessionResp, error) {
 	log := logger.WithContext(driverctx.ConnIdFromContext(ctx), driverctx.CorrelationIdFromContext(ctx), "")
 	defer log.Duration(logger.Track("CloseSession"))
@@ -56,6 +59,8 @@ func (tsc *ThriftServiceClient) CloseSession(ctx context.Context, req *cli_servi
 	return resp, CheckStatus(resp)
 }
 
+// FetchResults is a wrapper around the thrift operation FetchResults
+// If RecordResults is true, the results will be marshalled to JSON format and written to FetchResults<index>.json
 func (tsc *ThriftServiceClient) FetchResults(ctx context.Context, req *cli_service.TFetchResultsReq) (*cli_service.TFetchResultsResp, error) {
 	log := logger.WithContext(driverctx.ConnIdFromContext(ctx), driverctx.CorrelationIdFromContext(ctx), SprintGuid(req.OperationHandle.OperationId.GUID))
 	defer log.Duration(logger.Track("FetchResults"))
@@ -71,6 +76,8 @@ func (tsc *ThriftServiceClient) FetchResults(ctx context.Context, req *cli_servi
 	return resp, CheckStatus(resp)
 }
 
+// GetResultSetMetadata is a wrapper around the thrift operation GetResultSetMetadata
+// If RecordResults is true, the results will be marshalled to JSON format and written to GetResultSetMetadata<index>.json
 func (tsc *ThriftServiceClient) GetResultSetMetadata(ctx context.Context, req *cli_service.TGetResultSetMetadataReq) (*cli_service.TGetResultSetMetadataResp, error) {
 	log := logger.WithContext(driverctx.ConnIdFromContext(ctx), driverctx.CorrelationIdFromContext(ctx), SprintGuid(req.OperationHandle.OperationId.GUID))
 	defer log.Duration(logger.Track("GetResultSetMetadata"))
@@ -86,9 +93,11 @@ func (tsc *ThriftServiceClient) GetResultSetMetadata(ctx context.Context, req *c
 	return resp, CheckStatus(resp)
 }
 
+// ExecuteStatement is a wrapper around the thrift operation ExecuteStatement
+// If RecordResults is true, the results will be marshalled to JSON format and written to ExecuteStatement<index>.json
 func (tsc *ThriftServiceClient) ExecuteStatement(ctx context.Context, req *cli_service.TExecuteStatementReq) (*cli_service.TExecuteStatementResp, error) {
 	msg, start := logger.Track("ExecuteStatement")
-	resp, err := tsc.TCLIServiceClient.ExecuteStatement(ctx, req)
+	resp, err := tsc.TCLIServiceClient.ExecuteStatement(context.Background(), req)
 	if err != nil {
 		return resp, errors.Wrap(err, "execute statement request error")
 	}
@@ -107,6 +116,8 @@ func (tsc *ThriftServiceClient) ExecuteStatement(ctx context.Context, req *cli_s
 	return resp, CheckStatus(resp)
 }
 
+// GetOperationStatus is a wrapper around the thrift operation GetOperationStatus
+// If RecordResults is true, the results will be marshalled to JSON format and written to GetOperationStatus<index>.json
 func (tsc *ThriftServiceClient) GetOperationStatus(ctx context.Context, req *cli_service.TGetOperationStatusReq) (*cli_service.TGetOperationStatusResp, error) {
 	log := logger.WithContext(driverctx.ConnIdFromContext(ctx), driverctx.CorrelationIdFromContext(ctx), SprintGuid(req.OperationHandle.OperationId.GUID))
 	defer log.Duration(logger.Track("GetOperationStatus"))
@@ -122,6 +133,8 @@ func (tsc *ThriftServiceClient) GetOperationStatus(ctx context.Context, req *cli
 	return resp, CheckStatus(resp)
 }
 
+// CloseOperation is a wrapper around the thrift operation CloseOperation
+// If RecordResults is true, the results will be marshalled to JSON format and written to CloseOperation<index>.json
 func (tsc *ThriftServiceClient) CloseOperation(ctx context.Context, req *cli_service.TCloseOperationReq) (*cli_service.TCloseOperationResp, error) {
 	log := logger.WithContext(driverctx.ConnIdFromContext(ctx), driverctx.CorrelationIdFromContext(ctx), SprintGuid(req.OperationHandle.OperationId.GUID))
 	defer log.Duration(logger.Track("CloseOperation"))
@@ -137,6 +150,8 @@ func (tsc *ThriftServiceClient) CloseOperation(ctx context.Context, req *cli_ser
 	return resp, CheckStatus(resp)
 }
 
+// CancelOperation is a wrapper around the thrift operation CancelOperation
+// If RecordResults is true, the results will be marshalled to JSON format and written to CancelOperation<index>.json
 func (tsc *ThriftServiceClient) CancelOperation(ctx context.Context, req *cli_service.TCancelOperationReq) (*cli_service.TCancelOperationResp, error) {
 	log := logger.WithContext(driverctx.ConnIdFromContext(ctx), driverctx.CorrelationIdFromContext(ctx), SprintGuid(req.OperationHandle.OperationId.GUID))
 	defer log.Duration(logger.Track("CancelOperation"))
@@ -152,25 +167,8 @@ func (tsc *ThriftServiceClient) CancelOperation(ctx context.Context, req *cli_se
 	return resp, CheckStatus(resp)
 }
 
-// log.Debug().Msg(fmt.Sprint(c.transport.response.StatusCode))
-// log.Debug().Msg(c.transport.response.Header.Get("X-Databricks-Org-Id"))
-// log.Debug().Msg(c.transport.response.Header.Get("x-databricks-error-or-redirect-message"))
-// log.Debug().Msg(c.transport.response.Header.Get("x-thriftserver-error-message"))
-// log.Debug().Msg(c.transport.response.Header.Get("x-databricks-reason-phrase"))
-
-// This is a wrapper of the http transport so we can have access to response code and headers
+// InitThriftClient is a wrapper of the http transport, so we can have access to response code and headers.
 // It is important to know the code and headers to know if we need to retry or not
-type Transport struct {
-	*http.Transport
-	response *http.Response
-}
-
-func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	resp, err := t.Transport.RoundTrip(req)
-	t.response = resp
-	return resp, err
-}
-
 func InitThriftClient(cfg *config.Config) (*ThriftServiceClient, error) {
 	endpoint := cfg.ToEndpointURL()
 	tcfg := &thrift.TConfiguration{
@@ -197,31 +195,24 @@ func InitThriftClient(cfg *config.Config) (*ThriftServiceClient, error) {
 	}
 
 	var tTrans thrift.TTransport
-	var tr *Transport
 	var err error
 
 	switch cfg.ThriftTransport {
 	case "http":
-		tr = &Transport{
-			Transport: &http.Transport{
-				TLSClientConfig: cfg.TLSConfig,
-			},
-		}
-		httpclient := &http.Client{
-			Transport: tr,
-			Timeout:   cfg.ClientTimeout,
-		}
-		tTrans, err = thrift.NewTHttpClientWithOptions(endpoint, thrift.THttpClientOptions{Client: httpclient})
+		retryableClient := retryablehttp.NewClient()
+		retryableClient.HTTPClient.Timeout = cfg.ClientTimeout
+		// TODO
+		// add custom retryableClient.CheckRetry to retry based on thrift server headers and response code
+		tTrans, err = thrift.NewTHttpClientWithOptions(endpoint, thrift.THttpClientOptions{Client: retryableClient.HTTPClient})
 		if err != nil {
 			return nil, err
 		}
-
-		httpTransport := tTrans.(*thrift.THttpClient)
+		thriftHttpClient := tTrans.(*thrift.THttpClient)
 		userAgent := fmt.Sprintf("%s/%s", cfg.DriverName, cfg.DriverVersion)
 		if cfg.UserAgentEntry != "" {
 			userAgent = fmt.Sprintf("%s/%s (%s)", cfg.DriverName, cfg.DriverVersion, cfg.UserAgentEntry)
 		}
-		httpTransport.SetHeader("User-Agent", userAgent)
+		thriftHttpClient.SetHeader("User-Agent", userAgent)
 
 	case "framed":
 		tTrans = thrift.NewTFramedTransportConf(tTrans, tcfg)
@@ -241,15 +232,17 @@ func InitThriftClient(cfg *config.Config) (*ThriftServiceClient, error) {
 	iprot := protocolFactory.GetProtocol(tTrans)
 	oprot := protocolFactory.GetProtocol(tTrans)
 	tclient := cli_service.NewTCLIServiceClient(thrift.NewTStandardClient(iprot, oprot))
-	tsClient := &ThriftServiceClient{tclient, tr}
+	tsClient := &ThriftServiceClient{tclient}
 	return tsClient, nil
 }
 
-// ThriftResponse respresents thrift rpc response
+// ThriftResponse represents the thrift rpc response
 type ThriftResponse interface {
 	GetStatus() *cli_service.TStatus
 }
 
+// CheckStatus checks the status code after a thrift operation.
+// Returns nil if the operation is successful or still executing, otherwise returns an error.
 func CheckStatus(resp interface{}) error {
 	rpcresp, ok := resp.(ThriftResponse)
 	if ok {
@@ -268,6 +261,7 @@ func CheckStatus(resp interface{}) error {
 	return errors.New("thrift: invalid response")
 }
 
+// SprintGuid is a convenience function to format a byte array into GUID.
 func SprintGuid(bts []byte) string {
 	if len(bts) == 16 {
 		return fmt.Sprintf("%x-%x-%x-%x-%x", bts[0:4], bts[4:6], bts[6:8], bts[8:10], bts[10:16])
