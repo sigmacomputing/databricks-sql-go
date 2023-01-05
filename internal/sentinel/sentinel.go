@@ -2,6 +2,7 @@ package sentinel
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/databricks/databricks-sql-go/logger"
@@ -104,7 +105,11 @@ func (s Sentinel) Watch(ctx context.Context, interval, timeout time.Duration) (W
 			if done() {
 				intervalTimer.Stop()
 				if s.OnDoneFn != nil {
-					go processor(statusResp)
+					go func() {
+						defer loggingRecoverer()
+
+						processor(statusResp)
+					}()
 				} else {
 					return WatchSuccess, statusResp, nil
 				}
@@ -117,7 +122,11 @@ func (s Sentinel) Watch(ctx context.Context, interval, timeout time.Duration) (W
 			_ = intervalTimer.Stop()
 			if s.OnCancelFn != nil && !s.onCancelFnCalled {
 				s.onCancelFnCalled = true
-				go canceler(ctx, ctx.Err().Error())
+				go func() {
+					defer loggingRecoverer()
+
+					canceler(ctx, ctx.Err().Error())
+				}()
 			}
 			return WatchCanceled, nil, errors.Wrap(ctx.Err(), "sentinel context done")
 		case <-timeoutTimerCh:
@@ -126,9 +135,27 @@ func (s Sentinel) Watch(ctx context.Context, interval, timeout time.Duration) (W
 			_ = intervalTimer.Stop()
 			if s.OnCancelFn != nil && !s.onCancelFnCalled {
 				s.onCancelFnCalled = true
-				go canceler(ctx, err.Error())
+				go func() {
+					defer loggingRecoverer()
+
+					canceler(ctx, err.Error())
+				}()
 			}
 			return WatchTimeout, nil, err
 		}
+	}
+}
+
+func loggingRecoverer() {
+	if r := recover(); r != nil {
+		var err error
+		switch e := r.(type) {
+		case error:
+			err = e
+		default:
+			err = fmt.Errorf("recovered error: %v", e)
+		}
+
+		log.Error().Stack().Err(err).Msg("recovered in canceller")
 	}
 }
